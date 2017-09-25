@@ -1692,23 +1692,25 @@ class Choices {
                     .getItemsFilteredByActive()
                     .some((item) => item.label === value.trim());
               }
-              if (!disablePushOptions && (duplicateItems || (matchingChoices.length === 0 && isUnique))) {
-                this._addChoice(value, value, true, false);
-              }
-              if (duplicateItems || isUnique) {
-                if (matchingChoices[0]) {
-                  this._addItem(
+              if (!disablePushOptions) {
+                if (duplicateItems || (matchingChoices.length === 0 && isUnique)) {
+                  this._addChoice(value, value, true, false);
+                }
+                if (duplicateItems || isUnique) {
+                  if (matchingChoices[0]) {
+                    this._addItem(
                       matchingChoices[0].value,
                       matchingChoices[0].label,
                       matchingChoices[0].id
                     );
+                  }
                 }
-                else {
-                  this._addItem(
-                    value,
-                    value
-                  );
-                }
+              }
+              else {
+                this._addItem(
+                  value,
+                  value
+                );
               }
               this.containerOuter.focus();
             }

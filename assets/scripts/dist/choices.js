@@ -1839,15 +1839,17 @@ return /******/ (function(modules) { // webpackBootstrap
 	                    return item.label === value.trim();
 	                  });
 	                }
-	                if (!disablePushOptions && (duplicateItems || matchingChoices.length === 0 && isUnique)) {
-	                  _this16._addChoice(value, value, true, false);
-	                }
-	                if (duplicateItems || isUnique) {
-	                  if (matchingChoices[0]) {
-	                    _this16._addItem(matchingChoices[0].value, matchingChoices[0].label, matchingChoices[0].id);
-	                  } else {
-	                    _this16._addItem(value, value);
+	                if (!disablePushOptions) {
+	                  if (duplicateItems || matchingChoices.length === 0 && isUnique) {
+	                    _this16._addChoice(value, value, true, false);
 	                  }
+	                  if (duplicateItems || isUnique) {
+	                    if (matchingChoices[0]) {
+	                      _this16._addItem(matchingChoices[0].value, matchingChoices[0].label, matchingChoices[0].id);
+	                    }
+	                  }
+	                } else {
+	                  _this16._addItem(value, value);
 	                }
 	                _this16.containerOuter.focus();
 	              }
