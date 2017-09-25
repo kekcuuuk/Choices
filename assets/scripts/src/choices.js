@@ -1690,7 +1690,7 @@ class Choices {
                     .some((item) => item.label === value.trim());
               }
               if (duplicateItems || (matchingChoices.length === 0 && isUnique)) {
-                this._addChoice(true, false, value, value);
+                this._addChoice(value, value, true, false);
               }
               if (duplicateItems || isUnique) {
                 if (matchingChoices[0]) {

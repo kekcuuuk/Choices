@@ -1837,7 +1837,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	                  });
 	                }
 	                if (duplicateItems || matchingChoices.length === 0 && isUnique) {
-	                  _this16._addChoice(true, false, value, value);
+	                  _this16._addChoice(value, value, true, false);
 	                }
 	                if (duplicateItems || isUnique) {
 	                  if (matchingChoices[0]) {
