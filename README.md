@@ -256,6 +256,13 @@ Pass an array of objects:
 
 **Usage:** Removes the "selected" property check when adding an item with dropdown.
 
+### disablePushOptions
+**Type:** `Boolean` **Default:** `false`
+
+**Input types affected:** `select-multiple`
+
+**Usage:** Disable push `choices` from select options.
+
 
 ### duplicateItems
 **Type:** `Boolean` **Default:** `true`

@@ -63,6 +63,7 @@ class Choices {
       removeItemButton: false,
       editItems: false,
       disableChoiceSelected: false,
+      disablePushOptions: false,
       duplicateItems: true,
       delimiter: ',',
       paste: true,
@@ -1682,6 +1683,7 @@ class Choices {
               let matchingChoices = [];
               let isUnique;
               const duplicateItems = this.config.duplicateItems;
+              const disablePushOptions = this.config.disablePushOptions;
               if (!duplicateItems) {
                 matchingChoices = this.store
                     .getChoices()
@@ -1690,7 +1692,7 @@ class Choices {
                     .getItemsFilteredByActive()
                     .some((item) => item.label === value.trim());
               }
-              if (duplicateItems || (matchingChoices.length === 0 && isUnique)) {
+              if (!disablePushOptions && (duplicateItems || (matchingChoices.length === 0 && isUnique))) {
                 this._addChoice(value, value, true, false);
               }
               if (duplicateItems || isUnique) {
@@ -1700,6 +1702,12 @@ class Choices {
                       matchingChoices[0].label,
                       matchingChoices[0].id
                     );
+                }
+                else {
+                  this._addItem(
+                    value,
+                    value
+                  );
                 }
               }
               this.containerOuter.focus();
@@ -2842,17 +2850,32 @@ class Choices {
       } else {
         const passedOptions = Array.from(this.passedElement.options);
         const filter = this.config.sortFilter;
+        const disablePushOptions = this.config.disablePushOptions;
         const allChoices = this.presetChoices;
 
         // Create array of options from option elements
         passedOptions.forEach((o) => {
-          allChoices.push({
-            value: o.value,
-            label: o.innerHTML,
-            selected: o.selected,
-            disabled: o.disabled || o.parentNode.disabled,
-            placeholder: o.hasAttribute('placeholder'),
-          });
+          if (!disablePushOptions) {
+            allChoices.push({
+              value: o.value,
+              label: o.innerHTML,
+              selected: o.selected,
+              disabled: o.disabled || o.parentNode.disabled,
+              placeholder: o.hasAttribute('placeholder'),
+            });
+          } else {
+            if (o.selected) {
+              this._addItem(
+                o.value,
+                o.innerHTML,
+                -1,
+                -1,
+                null,
+                o.hasAttribute('placeholder')
+              );
+            }
+          }
+
         });
 
         // If sorting is enabled or the user is searching, filter choices

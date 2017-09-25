@@ -127,6 +127,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      removeItemButton: false,
 	      editItems: false,
 	      disableChoiceSelected: false,
+	      disablePushOptions: false,
 	      duplicateItems: true,
 	      delimiter: ',',
 	      paste: true,
@@ -1829,6 +1830,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	                var matchingChoices = [];
 	                var isUnique = void 0;
 	                var duplicateItems = _this16.config.duplicateItems;
+	                var disablePushOptions = _this16.config.disablePushOptions;
 	                if (!duplicateItems) {
 	                  matchingChoices = _this16.store.getChoices().filter(function (choice) {
 	                    return choice.label === value.trim();
@@ -1837,12 +1839,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	                    return item.label === value.trim();
 	                  });
 	                }
-	                if (duplicateItems || matchingChoices.length === 0 && isUnique) {
+	                if (!disablePushOptions && (duplicateItems || matchingChoices.length === 0 && isUnique)) {
 	                  _this16._addChoice(value, value, true, false);
 	                }
 	                if (duplicateItems || isUnique) {
 	                  if (matchingChoices[0]) {
 	                    _this16._addItem(matchingChoices[0].value, matchingChoices[0].label, matchingChoices[0].id);
+	                  } else {
+	                    _this16._addItem(value, value);
 	                  }
 	                }
 	                _this16.containerOuter.focus();
@@ -2850,17 +2854,24 @@ return /******/ (function(modules) { // webpackBootstrap
 	        } else {
 	          var passedOptions = Array.from(this.passedElement.options);
 	          var filter = this.config.sortFilter;
+	          var disablePushOptions = this.config.disablePushOptions;
 	          var allChoices = this.presetChoices;
 
 	          // Create array of options from option elements
 	          passedOptions.forEach(function (o) {
-	            allChoices.push({
-	              value: o.value,
-	              label: o.innerHTML,
-	              selected: o.selected,
-	              disabled: o.disabled || o.parentNode.disabled,
-	              placeholder: o.hasAttribute('placeholder')
-	            });
+	            if (!disablePushOptions) {
+	              allChoices.push({
+	                value: o.value,
+	                label: o.innerHTML,
+	                selected: o.selected,
+	                disabled: o.disabled || o.parentNode.disabled,
+	                placeholder: o.hasAttribute('placeholder')
+	              });
+	            } else {
+	              if (o.selected) {
+	                _this23._addItem(o.value, o.innerHTML, -1, -1, null, o.hasAttribute('placeholder'));
+	              }
+	            }
 	          });
 
 	          // If sorting is enabled or the user is searching, filter choices
