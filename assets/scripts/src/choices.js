@@ -62,6 +62,7 @@ class Choices {
       removeItems: true,
       removeItemButton: false,
       editItems: false,
+      disableChoiceSelected: false,
       duplicateItems: true,
       delimiter: ',',
       paste: true,
@@ -1266,7 +1267,7 @@ class Choices {
       choice,
     });
 
-    if (choice && !choice.selected && !choice.disabled) {
+    if (choice && (this.config.disableChoiceSelected || !choice.selected) && !choice.disabled) {
       const canAddItem = this._canAddItem(activeItems, choice.value);
 
       if (canAddItem.response) {

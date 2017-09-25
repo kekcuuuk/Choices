@@ -249,6 +249,14 @@ Pass an array of objects:
 
 **Usage:** Whether a user can edit items. An item's value can be edited by pressing the backspace.
 
+### disableChoiceSelected
+**Type:** `Boolean` **Default:** `false`
+
+**Input types affected:** `text`, `select-multiple`
+
+**Usage:** Removes the "selected" property check when adding an item with dropdown.
+
+
 ### duplicateItems
 **Type:** `Boolean` **Default:** `true`
 
