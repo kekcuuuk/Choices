@@ -1,3 +1,4 @@
+// noinspection JSAnnotator
 import Fuse from 'fuse.js';
 import classNames from 'classnames';
 import Store from './store/index';
@@ -34,7 +35,7 @@ from './lib/utils';
 import './lib/polyfills';
 
 /**
- * Choices
+ * Choices§P
  */
 class Choices {
   constructor(element = '[data-choice]', userConfig = {}) {
@@ -173,6 +174,7 @@ class Choices {
       }
     }
 
+
     this.highlightPosition = 0;
     this.canSearch = this.config.searchEnabled;
 
@@ -182,6 +184,15 @@ class Choices {
         (this.config.placeholderValue || this.passedElement.getAttribute('placeholder')) :
         false;
     }
+
+    // It only makes sense for addItems to be true for
+    // text inputs by default
+    if (this.isSelectElement) {
+      defaultConfig.addItems = false;
+    }
+
+    // Merge options with user options
+    this.config = extend(defaultConfig, userConfig);
 
     // Assign preset choices from passed object
     this.presetChoices = this.config.choices;
@@ -215,7 +226,16 @@ class Choices {
     this._onPaste = this._onPaste.bind(this);
     this._onInput = this._onInput.bind(this);
 
-    // Monitor touch taps/scrolls
+    // Create data store
+    this.store = new Store(this.render);
+
+    // State tracking
+    this.initialised = false;
+    this.currentState = {};
+    this.prevState = {};
+    this.currentValue = '';
+    this.highlightPosition = 0;
+    this.canSearch = this.config.search;
     this.wasTap = true;
 
     // Cutting the mustard
@@ -516,32 +536,18 @@ class Choices {
 
           // If we have choices to show
           if (choiceListFragment.childNodes && choiceListFragment.childNodes.length > 0) {
-            // ...and we can select them
-            if (canAddItem.response) {
-              // ...append them and highlight the first choice
-              this.choiceList.appendChild(choiceListFragment);
-              this._highlightChoice();
-            } else {
-              // ...otherwise show a notice
-              this.choiceList.appendChild(this._getTemplate('notice', canAddItem.notice));
-            }
+            // If we actually have anything to add to our dropdown
+            // append it and highlight the first choice
+            this.choiceList.appendChild(choiceListFragment);
           } else {
-            // Otherwise show a notice
-            let dropdownItem;
-            let notice;
+            const activeItems = this.store.getItemsFilteredByActive();
+            const canAddItem = this._canAddItem(activeItems, this.input.value);
+            let dropdownItem = this._getTemplate('notice', this.config.noChoicesText);
 
-            if (this.isSearching) {
-              notice = isType('Function', this.config.noResultsText) ?
-                this.config.noResultsText() :
-                this.config.noResultsText;
-
-              dropdownItem = this._getTemplate('notice', notice, 'no-results');
-            } else {
-              notice = isType('Function', this.config.noChoicesText) ?
-                this.config.noChoicesText() :
-                this.config.noChoicesText;
-
-              dropdownItem = this._getTemplate('notice', notice, 'no-choices');
+            if (this.config.addItems && canAddItem.notice) {
+              dropdownItem = this._getTemplate('notice', canAddItem.notice);
+            } else if (this.isSearching) {
+              dropdownItem = this._getTemplate('notice', this.config.noResultsText);
             }
 
             this.choiceList.appendChild(dropdownItem);
@@ -1641,19 +1647,66 @@ class Choices {
     };
 
     const onEnterKey = () => {
+      const highlighted = this.dropdown.querySelector(`.${this.config.classNames.highlightedState}`);
+
+      if (hasActiveDropdown && highlighted) {
+        // If we have a highlighted choice, select it
+        this._handleChoiceAction(activeItems, highlighted);
+      } else if (this.isSelectOneElement) {
+        // Open single select dropdown if it's not active
+        if (!hasActiveDropdown) {
+          this.showDropdown(true);
+          e.preventDefault();
+        }
+      }
+
       // If enter key is pressed and the input has a value
-      if (this.isTextElement && target.value) {
+      if (target.value) {
         const value = this.input.value;
         const canAddItem = this._canAddItem(activeItems, value);
 
         // All is good, add
         if (canAddItem.response) {
-          if (hasActiveDropdown) {
-            this.hideDropdown();
+          // Track whether we will end up adding an item
+          const willAddItem = this.isTextElement || (this.isSelectElement && this.config.addItems);
+
+          if (willAddItem) {
+            if (hasActiveDropdown) {
+              this.hideDropdown();
+            }
+
+            if (this.isTextElement) {
+              this._addItem(value);
+            } else {
+              let matchingChoices = [];
+              let isUnique;
+              const duplicateItems = this.config.duplicateItems;
+              if (!duplicateItems) {
+                matchingChoices = this.store
+                    .getChoices()
+                    .filter((choice) => choice.label === value.trim());
+                isUnique = !this.store
+                    .getItemsFilteredByActive()
+                    .some((item) => item.label === value.trim());
+              }
+              if (duplicateItems || (matchingChoices.length === 0 && isUnique)) {
+                this._addChoice(true, false, value, value);
+              }
+              if (duplicateItems || isUnique) {
+                if (matchingChoices[0]) {
+                  this._addItem(
+                      matchingChoices[0].value,
+                      matchingChoices[0].label,
+                      matchingChoices[0].id
+                    );
+                }
+              }
+              this.containerOuter.focus();
+            }
+
+            this._triggerChange(value);
+            this.clearInput();
           }
-          this._addItem(value);
-          this._triggerChange(value);
-          this.clearInput();
         }
       }
 
@@ -2756,7 +2809,8 @@ class Choices {
       input.style.width = getWidthOfInput(input);
     }
 
-    if (!this.config.addItems) {
+    // Disable text input if no entry allowed
+    if (!this.config.addItems && this.isTextElement) {
       this.disable();
     }
 

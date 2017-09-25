@@ -64,7 +64,8 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	'use strict';
 
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }(); // noinspection JSAnnotator
+
 
 	var _fuse = __webpack_require__(2);
 
@@ -93,7 +94,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 	/**
-	 * Choices
+	 * Choices§P
 	 */
 	var Choices = function () {
 	  function Choices() {
@@ -247,6 +248,15 @@ return /******/ (function(modules) { // webpackBootstrap
 	      this.placeholder = this.config.placeholder ? this.config.placeholderValue || this.passedElement.getAttribute('placeholder') : false;
 	    }
 
+	    // It only makes sense for addItems to be true for
+	    // text inputs by default
+	    if (this.isSelectElement) {
+	      defaultConfig.addItems = false;
+	    }
+
+	    // Merge options with user options
+	    this.config = (0, _utils.extend)(defaultConfig, userConfig);
+
 	    // Assign preset choices from passed object
 	    this.presetChoices = this.config.choices;
 
@@ -277,7 +287,16 @@ return /******/ (function(modules) { // webpackBootstrap
 	    this._onPaste = this._onPaste.bind(this);
 	    this._onInput = this._onInput.bind(this);
 
-	    // Monitor touch taps/scrolls
+	    // Create data store
+	    this.store = new _index2.default(this.render);
+
+	    // State tracking
+	    this.initialised = false;
+	    this.currentState = {};
+	    this.prevState = {};
+	    this.currentValue = '';
+	    this.highlightPosition = 0;
+	    this.canSearch = this.config.search;
 	    this.wasTap = true;
 
 	    // Cutting the mustard
@@ -609,28 +628,18 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	            // If we have choices to show
 	            if (choiceListFragment.childNodes && choiceListFragment.childNodes.length > 0) {
-	              // ...and we can select them
-	              if (canAddItem.response) {
-	                // ...append them and highlight the first choice
-	                this.choiceList.appendChild(choiceListFragment);
-	                this._highlightChoice();
-	              } else {
-	                // ...otherwise show a notice
-	                this.choiceList.appendChild(this._getTemplate('notice', canAddItem.notice));
-	              }
+	              // If we actually have anything to add to our dropdown
+	              // append it and highlight the first choice
+	              this.choiceList.appendChild(choiceListFragment);
 	            } else {
-	              // Otherwise show a notice
-	              var dropdownItem = void 0;
-	              var notice = void 0;
+	              var _activeItems = this.store.getItemsFilteredByActive();
+	              var _canAddItem2 = this._canAddItem(_activeItems, this.input.value);
+	              var dropdownItem = this._getTemplate('notice', this.config.noChoicesText);
 
-	              if (this.isSearching) {
-	                notice = (0, _utils.isType)('Function', this.config.noResultsText) ? this.config.noResultsText() : this.config.noResultsText;
-
-	                dropdownItem = this._getTemplate('notice', notice, 'no-results');
-	              } else {
-	                notice = (0, _utils.isType)('Function', this.config.noChoicesText) ? this.config.noChoicesText() : this.config.noChoicesText;
-
-	                dropdownItem = this._getTemplate('notice', notice, 'no-choices');
+	              if (this.config.addItems && _canAddItem2.notice) {
+	                dropdownItem = this._getTemplate('notice', _canAddItem2.notice);
+	              } else if (this.isSearching) {
+	                dropdownItem = this._getTemplate('notice', this.config.noResultsText);
 	              }
 
 	              this.choiceList.appendChild(dropdownItem);
@@ -641,15 +650,15 @@ return /******/ (function(modules) { // webpackBootstrap
 	        // Items
 	        if (this.currentState.items !== this.prevState.items) {
 	          // Get active items (items that can be selected)
-	          var _activeItems = this.store.getItemsFilteredByActive();
+	          var _activeItems2 = this.store.getItemsFilteredByActive();
 
 	          // Clear list
 	          this.itemList.innerHTML = '';
 
-	          if (_activeItems && _activeItems) {
+	          if (_activeItems2 && _activeItems2) {
 	            // Create a fragment to store our list items
 	            // (so we don't have to update the DOM for each item)
-	            var itemListFragment = this.renderItems(_activeItems);
+	            var itemListFragment = this.renderItems(_activeItems2);
 
 	            // If we have items to add
 	            if (itemListFragment.childNodes) {
@@ -1785,19 +1794,62 @@ return /******/ (function(modules) { // webpackBootstrap
 	      };
 
 	      var onEnterKey = function onEnterKey() {
+	        var highlighted = _this16.dropdown.querySelector('.' + _this16.config.classNames.highlightedState);
+
+	        if (hasActiveDropdown && highlighted) {
+	          // If we have a highlighted choice, select it
+	          _this16._handleChoiceAction(activeItems, highlighted);
+	        } else if (_this16.isSelectOneElement) {
+	          // Open single select dropdown if it's not active
+	          if (!hasActiveDropdown) {
+	            _this16.showDropdown(true);
+	            e.preventDefault();
+	          }
+	        }
+
 	        // If enter key is pressed and the input has a value
-	        if (_this16.isTextElement && target.value) {
+	        if (target.value) {
 	          var value = _this16.input.value;
 	          var canAddItem = _this16._canAddItem(activeItems, value);
 
 	          // All is good, add
 	          if (canAddItem.response) {
-	            if (hasActiveDropdown) {
-	              _this16.hideDropdown();
+	            // Track whether we will end up adding an item
+	            var willAddItem = _this16.isTextElement || _this16.isSelectElement && _this16.config.addItems;
+
+	            if (willAddItem) {
+	              if (hasActiveDropdown) {
+	                _this16.hideDropdown();
+	              }
+
+	              if (_this16.isTextElement) {
+	                _this16._addItem(value);
+	              } else {
+	                var matchingChoices = [];
+	                var isUnique = void 0;
+	                var duplicateItems = _this16.config.duplicateItems;
+	                if (!duplicateItems) {
+	                  matchingChoices = _this16.store.getChoices().filter(function (choice) {
+	                    return choice.label === value.trim();
+	                  });
+	                  isUnique = !_this16.store.getItemsFilteredByActive().some(function (item) {
+	                    return item.label === value.trim();
+	                  });
+	                }
+	                if (duplicateItems || matchingChoices.length === 0 && isUnique) {
+	                  _this16._addChoice(true, false, value, value);
+	                }
+	                if (duplicateItems || isUnique) {
+	                  if (matchingChoices[0]) {
+	                    _this16._addItem(matchingChoices[0].value, matchingChoices[0].label, matchingChoices[0].id);
+	                  }
+	                }
+	                _this16.containerOuter.focus();
+	              }
+
+	              _this16._triggerChange(value);
+	              _this16.clearInput();
 	            }
-	            _this16._addItem(value);
-	            _this16._triggerChange(value);
-	            _this16.clearInput();
 	          }
 	        }
 
@@ -1808,15 +1860,15 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	        if (hasActiveDropdown) {
 	          e.preventDefault();
-	          var highlighted = _this16.dropdown.querySelector('.' + _this16.config.classNames.highlightedState);
+	          var _highlighted = _this16.dropdown.querySelector('.' + _this16.config.classNames.highlightedState);
 
 	          // If we have a highlighted choice
-	          if (highlighted) {
+	          if (_highlighted) {
 	            // add enter keyCode value
 	            if (activeItems[0]) {
 	              activeItems[0].keyCode = enterKey;
 	            }
-	            _this16._handleChoiceAction(activeItems, highlighted);
+	            _this16._handleChoiceAction(activeItems, _highlighted);
 	          }
 	        } else if (_this16.isSelectOneElement && !hasActiveDropdown) {
 	          // Open single select dropdown if it's not active
@@ -2765,7 +2817,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	        input.style.width = (0, _utils.getWidthOfInput)(input);
 	      }
 
-	      if (!this.config.addItems) {
+	      // Disable text input if no entry allowed
+	      if (!this.config.addItems && this.isTextElement) {
 	        this.disable();
 	      }
 

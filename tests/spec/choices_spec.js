@@ -359,7 +359,7 @@ describe('Choices', () => {
         preventDefault: () => {}
       });
 
-      expect(this.choices.currentState.items.length).toBe(2);
+      expect(this.choices.currentState.items.length).toBe(1);
     });
 
     it('should trigger add/change event on selection', function() {
@@ -375,12 +375,16 @@ describe('Choices', () => {
       this.choices.input.focus();
 
       // Key down to second choice
-      this.choices._onKeyDown({
-        target: this.choices.input,
-        keyCode: 40,
-        ctrlKey: false,
-        preventDefault: () => {}
-      });
+      let count = 0;
+      while (count < 2) {
+        this.choices._onKeyDown({
+          target: this.choices.input,
+          keyCode: 40,
+          ctrlKey: false,
+          preventDefault: () => {}
+        });
+        count++;
+      }
 
       // Key down to select choice
       this.choices._onKeyDown({
