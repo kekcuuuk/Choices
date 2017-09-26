@@ -338,7 +338,7 @@ Pass an array of objects:
 ### regexFilter
 **Type:** `Regex` **Default:** `null`
 
-**Input types affected:** `text`
+**Input types affected:** `text`, `select-multiple`
 
 **Usage:** A filter that will need to pass for a user to successfully add an item.
 

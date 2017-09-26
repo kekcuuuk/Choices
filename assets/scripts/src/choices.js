@@ -1345,7 +1345,7 @@ class Choices {
       }
     }
 
-    if (this.isTextElement && this.config.addItems && canAddItem && this.config.regexFilter) {
+    if ((this.isTextElement || this.isSelectMultipleElement) && this.config.addItems && canAddItem && this.config.regexFilter) {
       // If a user has supplied a regular expression filter
       // determine whether we can update based on whether
       // our regular expression passes
